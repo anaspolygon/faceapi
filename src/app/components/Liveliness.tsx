@@ -71,15 +71,6 @@ const Liveliness = () => {
     videoRef.current &&
       videoRef.current.addEventListener("play", () => {
         if (!videoRef.current) return;
-        // const canvas = faceapi.createCanvasFromMedia(videoRef.current);
-        // document.body.append(canvas);
-
-        // const displaySize = {
-        //   width: videoRef.current.width,
-        //   height: videoRef.current.height,
-        // };
-        // faceapi.matchDimensions(canvas, displaySize);
-
         setInterval(async () => {
           let detection;
           if (videoRef.current) {
@@ -91,21 +82,8 @@ const Liveliness = () => {
               .withFaceLandmarks()
               .withFaceExpressions();
           }
-
-        //   const ctx = canvas.getContext("2d");
-        //   if (ctx) {
-        //     ctx.clearRect(0, 0, canvas.width, canvas.height);
-        //   }
-
           if (detection) {
-            // const resizedDetection = faceapi.resizeResults(
-            //   detection,
-            //   displaySize
-            // );
-            // faceapi.draw.drawDetections(canvas, resizedDetection);
-            // faceapi.draw.drawFaceExpressions(canvas, resizedDetection);
-            // faceapi.draw.drawFaceLandmarks(canvas, resizedDetection);
-
+      
             const expressions = detection.expressions;
             const landmarks = detection.landmarks;
 
