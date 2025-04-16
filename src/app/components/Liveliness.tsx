@@ -14,8 +14,8 @@ const Liveliness = () => {
   const [ear,setEar] = useState<number>(0);
 
   const prompts = [
+      { label: "Please smile 😄", key: "happy", type: "expression" },
     { label: "Please blink 👁️", key: "blink", type: "blink" },
-    { label: "Please smile 😄", key: "happy", type: "expression" },
     { label: "Look left 👈", key: "left", type: "pose" },
     { label: "Look right 👉", key: "right", type: "pose" },
     { label: "Look up 👆", key: "up", type: "pose" },
@@ -90,8 +90,10 @@ const Liveliness = () => {
             const currentPrompt = prompts[promptIndex];
             if (currentPrompt) {
               if (currentPrompt.type === "expression") {
-                const confidence =
-                  expressions[currentPrompt.key as keyof typeof expressions];
+                const confidence = expressions.happy
+                //   expressions[currentPrompt.key as keyof typeof expressions];
+
+            console.log("confidence",confidence,expressions)
                 if (
                   typeof confidence === "number" &&
                   confidence >= threshold &&
@@ -108,7 +110,7 @@ const Liveliness = () => {
                 const leftEye = landmarks.getLeftEye();
                 const rightEye = landmarks.getRightEye();
 
-                const computeEAR = (eye: { x: number; y: number }[]) => {
+                const computeEAR = (eye:faceapi.Point[]) => {
                   const dist = (
                     a: { x: number; y: number },
                     b: { x: number; y: number }
@@ -118,7 +120,10 @@ const Liveliness = () => {
                   const horizontal = dist(eye[0], eye[3]);
                   return (vertical1 + vertical2) / (2.0 * horizontal);
                 };
-
+        
+                console.log(leftEye, rightEye);
+                
+               
                 const leftEAR = computeEAR(leftEye);
                 const rightEAR = computeEAR(rightEye);
                 const avgEAR = (leftEAR + rightEAR) / 2.0;
