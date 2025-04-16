@@ -5,15 +5,17 @@ import Image from "next/image";
 
 const Liveliness = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [expressionPrompt, setExpressionPrompt] = useState("Please smile 😄");
+  const [expressionPrompt, setExpressionPrompt] = useState("Please blink 👁️");
   const [capturedExpressions, setCapturedExpressions] = useState<
     { prompt: string; detected?: object; ear?: number }[]
   >([]);
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
 
+  const [ear,setEar] = useState<number>(0);
+
   const prompts = [
-    { label: "Please smile 😄", key: "happy", type: "expression" },
     { label: "Please blink 👁️", key: "blink", type: "blink" },
+    { label: "Please smile 😄", key: "happy", type: "expression" },
     { label: "Look left 👈", key: "left", type: "pose" },
     { label: "Look right 👉", key: "right", type: "pose" },
     { label: "Look up 👆", key: "up", type: "pose" },
@@ -22,14 +24,20 @@ const Liveliness = () => {
 
   const [promptIndex, setPromptIndex] = useState(0);
   const threshold = 0.9;
-  const EAR_THRESHOLD = 0.20;
+  const EAR_THRESHOLD = 0.4;
   const captureFlag = useRef(true);
 
   const loadModels = async () => {
     const MODEL_URL = "/models";
-    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL + "/tiny_face_detector");
-    await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL + "/face_expression");
-    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL + "/face_landmark_68");
+    await faceapi.nets.tinyFaceDetector.loadFromUri(
+      MODEL_URL + "/tiny_face_detector"
+    );
+    await faceapi.nets.faceExpressionNet.loadFromUri(
+      MODEL_URL + "/face_expression"
+    );
+    await faceapi.nets.faceLandmark68Net.loadFromUri(
+      MODEL_URL + "/face_landmark_68"
+    );
   };
 
   const startVideo = () => {
@@ -63,14 +71,14 @@ const Liveliness = () => {
     videoRef.current &&
       videoRef.current.addEventListener("play", () => {
         if (!videoRef.current) return;
-        const canvas = faceapi.createCanvasFromMedia(videoRef.current);
-        document.body.append(canvas);
+        // const canvas = faceapi.createCanvasFromMedia(videoRef.current);
+        // document.body.append(canvas);
 
-        const displaySize = {
-          width: videoRef.current.width,
-          height: videoRef.current.height,
-        };
-        faceapi.matchDimensions(canvas, displaySize);
+        // const displaySize = {
+        //   width: videoRef.current.width,
+        //   height: videoRef.current.height,
+        // };
+        // faceapi.matchDimensions(canvas, displaySize);
 
         setInterval(async () => {
           let detection;
@@ -84,16 +92,19 @@ const Liveliness = () => {
               .withFaceExpressions();
           }
 
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-          }
+        //   const ctx = canvas.getContext("2d");
+        //   if (ctx) {
+        //     ctx.clearRect(0, 0, canvas.width, canvas.height);
+        //   }
 
           if (detection) {
-            const resizedDetection = faceapi.resizeResults(detection, displaySize);
-            faceapi.draw.drawDetections(canvas, resizedDetection);
-            faceapi.draw.drawFaceExpressions(canvas, resizedDetection);
-            faceapi.draw.drawFaceLandmarks(canvas, resizedDetection);
+            // const resizedDetection = faceapi.resizeResults(
+            //   detection,
+            //   displaySize
+            // );
+            // faceapi.draw.drawDetections(canvas, resizedDetection);
+            // faceapi.draw.drawFaceExpressions(canvas, resizedDetection);
+            // faceapi.draw.drawFaceLandmarks(canvas, resizedDetection);
 
             const expressions = detection.expressions;
             const landmarks = detection.landmarks;
@@ -101,19 +112,29 @@ const Liveliness = () => {
             const currentPrompt = prompts[promptIndex];
             if (currentPrompt) {
               if (currentPrompt.type === "expression") {
-                const confidence = expressions[currentPrompt.key as keyof typeof expressions];
-                if (typeof confidence === "number" && confidence >= threshold && captureFlag.current) {
+                const confidence =
+                  expressions[currentPrompt.key as keyof typeof expressions];
+                if (
+                  typeof confidence === "number" &&
+                  confidence >= threshold &&
+                  captureFlag.current
+                ) {
                   captureFlag.current = false;
                   captureImage();
-                  captureExpression(currentPrompt.label, Object.fromEntries(Object.entries(expressions)));
+                  captureExpression(
+                    currentPrompt.label,
+                    Object.fromEntries(Object.entries(expressions))
+                  );
                 }
               } else if (currentPrompt.type === "blink") {
                 const leftEye = landmarks.getLeftEye();
                 const rightEye = landmarks.getRightEye();
 
                 const computeEAR = (eye: { x: number; y: number }[]) => {
-                  const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-                    Math.hypot(a.x - b.x, a.y - b.y);
+                  const dist = (
+                    a: { x: number; y: number },
+                    b: { x: number; y: number }
+                  ) => Math.hypot(a.x - b.x, a.y - b.y);
                   const vertical1 = dist(eye[1], eye[5]);
                   const vertical2 = dist(eye[2], eye[4]);
                   const horizontal = dist(eye[0], eye[3]);
@@ -123,6 +144,9 @@ const Liveliness = () => {
                 const leftEAR = computeEAR(leftEye);
                 const rightEAR = computeEAR(rightEye);
                 const avgEAR = (leftEAR + rightEAR) / 2.0;
+
+                console.log("avgEar", avgEAR);
+                setEar(avgEAR);
 
                 if (avgEAR < EAR_THRESHOLD && captureFlag.current) {
                   captureFlag.current = false;
@@ -174,7 +198,10 @@ const Liveliness = () => {
     }
   };
 
-  const captureExpression = (promptLabel: string, expressions: Record<string, number>) => {
+  const captureExpression = (
+    promptLabel: string,
+    expressions: Record<string, number>
+  ) => {
     setCapturedExpressions((prev) => [
       ...prev,
       { prompt: promptLabel, detected: expressions },
@@ -198,6 +225,8 @@ const Liveliness = () => {
     goToNextPrompt();
   };
 
+  console.log(capturedImages);
+
   return (
     <div className="p-4">
       <h2 className="text-xl mb-2">Auto Expression, Blink & Pose Capture</h2>
@@ -212,6 +241,7 @@ const Liveliness = () => {
       />
 
       <div className="mt-6">
+        <p>promptIndex :{promptIndex}</p>
         <h3 className="text-lg font-semibold">Captured Results:</h3>
         <ul>
           {capturedExpressions?.map((item, index) => (
@@ -224,11 +254,15 @@ const Liveliness = () => {
         </ul>
       </div>
 
+      <div>
+         <p>{ear}</p>
+      </div>
+
       <div className="mt-6">
         <h3 className="text-lg font-semibold">Captured Images:</h3>
         <div className="flex flex-wrap gap-4 mt-2">
           {capturedImages.map((img, index) => (
-            <Image
+            <img
               key={index}
               src={img}
               alt={`capture-${index}`}
